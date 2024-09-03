@@ -2,6 +2,7 @@
 from typing import Any, List
 import copy
 import os
+import torch
 
 # Third Party
 from tqdm import tqdm
@@ -52,7 +53,7 @@ class GenAIGenerator(LMGenerator):
         self.client = Client(credentials=credentials)
 
     def generate_batch(
-        self, requests: List[Instance], disable_tqdm: bool = False
+        self, requests: List[Instance], disable_tqdm: bool = False, return_tokens: bool = False
     ) -> None:
         # group requests by kwargs
         grouper = generator_utils.Grouper(requests, lambda x: str(x.kwargs))
@@ -82,9 +83,13 @@ class GenAIGenerator(LMGenerator):
                 model_id = kwargs.pop("model_id_or_path", self.model_id_or_path)
                 until = kwargs.get("stop_sequences", None)
 
+                top_k = 5  # max allowed in BAM, are needed to calculate/approximate probabilities wrt vocabulary
                 parameters = TextGenerationParameters(
                     return_options=TextGenerationReturnOptions(
                         input_text=True,
+                        generated_tokens=True,
+                        top_n_tokens=top_k,
+                        token_logprobs=True,
                     ),
                     **kwargs,
                 )
@@ -105,6 +110,15 @@ class GenAIGenerator(LMGenerator):
                     )
 
                     s = result.generated_text
+                    if return_tokens:
+                        tokens = [t.text for t in result.generated_tokens]
+                        logits = torch.zeros(len(result.generated_tokens), top_k)
+                        for i, t in enumerate(result.generated_tokens):
+                            for j in range(top_k):
+                                if t.top_tokens[j].logprob is not None:
+                                    logits[i, j] = t.top_tokens[j].logprob
+                        s = (s, tokens, logits)
+
                     self.update_instance_with_result(
                         "generate_batch",
                         s,
