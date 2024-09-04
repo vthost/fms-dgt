@@ -128,33 +128,11 @@ class SimpleInstructDataBuilder(DataBuilder):
 
         assess_start = time.time()
 
-        # VT cannot run rouge validator atm: we need indices from what got discarded by rouge validator
+        # VT we cannot run rouge validator first atm: we need indices from what got discarded by rouge validator
         #  so need either auxiliary attributes in InstructLabSdgData to carry around the token data
         #   (ie the input for uq validator)
         #  or (rouge) validator to return which indices it kept/discarded
         #  or a composite validator which manages chaining validators
-        # # now we assess and filter with rouge
-        # all_instructions = [instr.instruction for instr in instruction_data]
-        #
-        # val_inputs: List[InstructLabSdgData] = []
-        # for instruction_data_entry in llm_data:
-        #     # computing similarity with the pre-tokenized instructions
-        #     inp = {
-        #         "to_check": instruction_data_entry.instruction,
-        #         "data": instruction_data_entry,
-        #     }
-        #     val_inputs.append(inp)
-        #
-        # # filter rouge data
-        # outputs = [
-        #     output["data"]
-        #     for output in self.val1.generate(
-        #         val_inputs,
-        #         context=all_instructions,
-        #         arg_fields=["to_check"],
-        #         result_field="output",
-        #     )
-        # ]
 
         val_inputs = [{
                 "instruction_data": entry,  # just to carry it with us and be able to use it as output later
@@ -168,6 +146,29 @@ class SimpleInstructDataBuilder(DataBuilder):
         )
 
         outputs = [o["instruction_data"] for o in outputs]
+
+        # now we assess and filter with rouge
+        all_instructions = [instr.instruction for instr in instruction_data]
+
+        val_inputs: List[InstructLabSdgData] = []
+        for instruction_data_entry in outputs:
+            # computing similarity with the pre-tokenized instructions
+            inp = {
+                "to_check": instruction_data_entry.instruction,
+                "data": instruction_data_entry,
+            }
+            val_inputs.append(inp)
+
+        # filter rouge data
+        outputs = [
+            output["data"]
+            for output in self.val1.generate(
+                val_inputs,
+                context=all_instructions,
+                arg_fields=["to_check"],
+                result_field="output",
+            )
+        ]
 
         discarded += len(llm_data) - len(outputs)
 

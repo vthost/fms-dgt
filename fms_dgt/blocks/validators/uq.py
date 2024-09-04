@@ -38,7 +38,7 @@ class UQValidator(BaseValidatorBlock):
         logprobs = torch.nn.functional.log_softmax(topk_logits, dim=-1)[:, 0].squeeze()
 
         # length-normalized predictive entropy
-        # see Andrey Malinin and Mark Gales. Uncertainty estimation in autoregressive structured prediction.
+        # see eg (8) in Andrey Malinin and Mark Gales. Uncertainty estimation in autoregressive structured prediction.
         # NOTE given that we use BAM atm, this includes special tokens
         ln_pe = - 1/len(logprobs) * sum(logprobs).item()
         # print("LN-PE", ln_pe)
