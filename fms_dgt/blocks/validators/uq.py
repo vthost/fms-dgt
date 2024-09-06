@@ -49,7 +49,7 @@ class UQValidator(BaseValidatorBlock):
                                  topk_toks=topk_toks,
                                  topk_logprobs=topk_logprobs,
                                  topk_logits=topk_logits)
-        print(self.block_type, uq_score)
+        # print(self.block_type, uq_score)
         return uq_score > self._threshold
 
 
