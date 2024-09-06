@@ -1,4 +1,5 @@
 # Standard
+import numpy as np
 from typing import Any, List
 import copy
 import os
@@ -111,13 +112,16 @@ class GenAIGenerator(LMGenerator):
 
                     s = result.generated_text
                     if return_tokens:
+                        # provide both just for simplicity
                         tokens = [t.text for t in result.generated_tokens]
-                        logits = torch.zeros(len(result.generated_tokens), top_k)
+                        topk_tokens = np.ndarray((len(result.generated_tokens), top_k), dtype=object)
+                        topk_logits = torch.zeros(len(result.generated_tokens), top_k)
                         for i, t in enumerate(result.generated_tokens):
                             for j in range(top_k):
                                 if t.top_tokens[j].logprob is not None:
-                                    logits[i, j] = t.top_tokens[j].logprob
-                        s = (s, tokens, logits)
+                                    topk_tokens[i, j] = t.top_tokens[j].text
+                                    topk_logits[i, j] = t.top_tokens[j].logprob
+                        s = (s, tokens, topk_tokens, topk_logits)
 
                     self.update_instance_with_result(
                         "generate_batch",

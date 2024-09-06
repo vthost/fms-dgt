@@ -19,10 +19,14 @@ blocks:
     result_field: output
     filter: true
     threshold: 1.0
+#  - name: val2
+#    type: tok_sar_scorer
+#    filter: true
+#    threshold: 0.2  # example value, selected w/o doing evaluation
+#    measurement_model: cross-encoder/stsb-roberta-large
   - name: val2
-    type: uq_scorer
+    type: ln_pe_scorer
     filter: true
-    threshold: 1.0
-    metric: ln_pe
+    threshold: 0.3  # example value, selected w/o doing evaluation
 metadata:
   version: 1.0
